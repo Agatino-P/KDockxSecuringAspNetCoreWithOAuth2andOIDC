@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +33,33 @@ builder.Services.AddAuthentication(options =>
     options.ClientId = builder.Configuration["KeyCloack:ClientId"];
     options.ClientSecret = builder.Configuration["KeyCloack:ClientSecret"];
     options.ResponseType = "code";
+    options.SignedOutRedirectUri= builder.Configuration["KeyCloack:SignedOutRedirectUri"]!;
+    //options.CallbackPath = new PathString("signin-oidc");
     options.SaveTokens = true;
+    //options.GetClaimsFromUserInfoEndpoint = true;
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        NameClaimType = "preferred_username" // or "name"
+    };
+    options.Events.OnTokenValidated = context =>
+    {
+        var nameClaimType = context.Principal.Identity.Name; // should be "david"
+        Console.WriteLine("User.Identity.Name from OnTokenValidated: " + nameClaimType);
+
+        foreach (var claim in context.Principal.Claims)
+        {
+            Console.WriteLine($"Claim: {claim.Type} = {claim.Value}");
+        }
+
+        return Task.CompletedTask;
+    };
+    options.Events.OnMessageReceived = context =>
+    {
+        Console.WriteLine("OIDC message received.");
+        return Task.CompletedTask;
+    };
+
 });
 
 var app = builder.Build();

@@ -183,15 +183,19 @@ public class GalleryController : Controller
         return RedirectToAction("Index");
     }
 
-    private  async Task LogIdentityInformation()
+    private async Task LogIdentityInformation()
     {
-        var identityToken = await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.IdToken);
+        string? identityToken = await HttpContext.GetTokenAsync(OpenIdConnectParameterNames.IdToken);
         StringBuilder sb = new();
         foreach (var claim in User.Claims)
         {
             sb.AppendLine($"Claim type:{claim.Type} - Claim value: {claim.Value}");
         }
-        _logger.LogInformation("Identity token: {IdentityToken}\nUser claims: {UserClaims}",
-            identityToken, sb);
+        _logger.LogInformation("""
+            At {Now}
+            Identity token: {IdentityToken}
+            User claims: {UserClaims}
+            """,
+            DateTime.Now, identityToken, sb);
     }
 }
