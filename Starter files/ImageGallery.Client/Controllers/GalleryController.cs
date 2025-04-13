@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
@@ -23,9 +25,35 @@ public class GalleryController : Controller
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    [HttpGet("/free")]
+    public IActionResult Free()
+    {
+        
+        
+        return Content($"Free {User?.Identity?.Name}");
+    }
+
+    [Authorize(Roles = "paying_user")]
+    [HttpGet("/pay")]
+    public IActionResult Pay()
+    {
+        return Content($"Pay {User?.Identity?.Name}");
+    }
+
+    [HttpGet("/claims")]
+    public IActionResult Claims()
+    {
+        var claims = User.Claims.Select(c => $"{c.Type}: {c.Value}");
+        var roles = string.Join(", ", User.Claims.Where(c => c.Type == "role").Select(c => c.Value));
+        var isInRole = User.IsInRole("paying_user");
+        return Content($"Claims:\n{string.Join("\n", claims)}\n\nRoles: {roles}\n\nIsInRole(\"paying_user\"): {isInRole}");
+    }
+
     public async Task<IActionResult> Index()
     {
+
         await LogIdentityInformation();
+        await LogAccessInformation();
 
         var httpClient = _httpClientFactory.CreateClient("APIClient");
 
@@ -197,5 +225,21 @@ public class GalleryController : Controller
             User claims: {UserClaims}
             """,
             DateTime.Now, identityToken, sb);
+    }
+
+    private async Task LogAccessInformation()
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var token = await HttpContext.GetTokenAsync("access_token");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            Console.WriteLine($"[Access Token]: {token}");
+            var jwt = handler.ReadJwtToken(token);
+            foreach (var claim in jwt.Claims)
+            {
+                Console.WriteLine($"Access Token claim: {claim.Type} = {claim.Value}");
+            }
+        }
     }
 }
