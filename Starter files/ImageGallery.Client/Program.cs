@@ -1,3 +1,4 @@
+using ImageGallery.Client.HttpHandlers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -10,6 +11,10 @@ using System.Security.Claims;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddHttpContextAccessor(); // Needed to get the token from HttpContext
+builder.Services.AddTransient<AccessTokenHandler>(); // <-- THIS registers your handler
+
 
 // Add services to the container.
 builder.Services.AddControllersWithViews()
@@ -24,7 +29,7 @@ builder.Services.AddHttpClient("APIClient", client =>
     client.BaseAddress = new Uri(builder.Configuration["ImageGalleryAPIRoot"]!);
     client.DefaultRequestHeaders.Clear();
     client.DefaultRequestHeaders.Add(HeaderNames.Accept, "application/json");
-});
+}).AddHttpMessageHandler<AccessTokenHandler>();
 
 
 builder.Services.AddAuthentication(options =>

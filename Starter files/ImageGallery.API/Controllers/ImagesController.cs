@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using ImageGallery.API.Services;
 using ImageGallery.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ImageGallery.API.Controllers
@@ -26,6 +27,7 @@ namespace ImageGallery.API.Controllers
                 throw new ArgumentNullException(nameof(mapper));
         }
 
+        [Authorize(Policy = "RequireImageGalleryApiFullaccessRole")]
         [HttpGet()]
         public async Task<ActionResult<IEnumerable<Image>>> GetImages()
         {
